@@ -1,0 +1,11 @@
+--- /old/opt/conda/lib/python3.7/site-packages/nbgrader/exchange/exchange.py
++++ /new/opt/conda/lib/python3.7/site-packages/nbgrader/exchange/exchange.py
+@@ -56,7 +56,7 @@ class Exchange(LoggingConfigurable):
+         return os.path.join(jupyter_data_dir(), 'nbgrader_cache')
+ 
+     path_includes_course = Bool(
+-        False,
++        True,
+         help=dedent(
+             """
+             Whether the path for fetching/submitting  assignments should be

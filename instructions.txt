@@ -1,0 +1,13 @@
+Lokal (als root):
+
+docker build -t mars.mci4me.at:5000/dibse/python_image -f python_image --no-cache .
+
+docker push mars.mci4me.at:5000/dibse/python_image
+
+
+Server:
+
+docker pull mars.mci4me.at:5000/dibse/python_image
+
+
+

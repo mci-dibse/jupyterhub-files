@@ -1,0 +1,49 @@
+--- /old/opt/conda/lib/python3.7/site-packages/nbgrader/preprocessors/saveautogrades.py
++++ /new/opt/conda/lib/python3.7/site-packages/nbgrader/preprocessors/saveautogrades.py
+@@ -40,6 +40,10 @@ class SaveAutoGrades(NbGraderPreprocessor):
+ 
+         # determine what the grade is
+         auto_score, _ = utils.determine_grade(cell)
++        # To be able to have autograding tests with zero max points we return -1 in case such a test fails
++        # Therefore we need to correct any negative points here
++        if auto_score < 0:
++            auto_score = 0
+         grade.auto_score = auto_score
+ 
+         # if there was previously a manual grade, or if there is no autograder
+--- /old/opt/conda/lib/python3.7/site-packages/nbgrader/utils.py
++++ /new/opt/conda/lib/python3.7/site-packages/nbgrader/utils.py
+@@ -68,8 +68,18 @@ def determine_grade(cell):
+ 
+     elif cell.cell_type == 'code':
+         for output in cell.outputs:
+-            if output.output_type == 'error':
+-                return 0, max_points
++            if output.output_type == 'error':    
++                errorFlag = True
++            # Error messages written to stderr are also a sign of a failed test
++            elif output.output_type == 'stream' and output.name == 'stderr':
++                errorFlag = True
++            if errorFlag:
++               # There may also be tests with zero max points (e.g. to check for correct syntax)
++               # To mark them as failed we need to return -1
++               if max_points == 0:
++                   return -1, 0
++               else:
++                   return 0, max_points
+         return max_points, max_points
+ 
+     else:
+--- /old/opt/conda/lib/python3.7/site-packages/nbgrader/validator.py
++++ /new/opt/conda/lib/python3.7/site-packages/nbgrader/validator.py
+@@ -94,6 +94,10 @@ class Validator(LoggingConfigurable):
+             for output in cell.outputs:
+                 if output.output_type == "error":
+                     errors.append("\n".join(output.traceback))
++                elif output.output_type == "stream" and output.name == 'stderr':
++                    # For some reason using "\n".join(output.text) here leads to each letter being in a new line
++                    # Therefore we already add the "\n" to the error message itself.
++                    errors.append("".join(output.text))
+ 
+             if len(errors) == 0:
+                 errors.append("You did not provide a response.")
