@@ -15,10 +15,10 @@ RUN apt-get install libpython3.6 -y
 
 USER ${NB_USER}
 
-RUN pip install jupyterhub==0.9.1
+RUN pip install jupyterhub==1.0.0
 
 # Installing nbgrader, but disabling the access to particular stuff for the student
-RUN pip install nbgrader==0.5.4 && \
+RUN pip install nbgrader==0.6.0 && \
         jupyter nbextension install --sys-prefix --py nbgrader --overwrite && \
         jupyter nbextension enable --sys-prefix --py nbgrader && \
         jupyter serverextension enable --sys-prefix --py nbgrader && \
@@ -48,16 +48,10 @@ RUN pip3 install zeep
 RUN pip3 install numpy scipy matplotlib pandas sympy nose tzlocal rpy2
 
 # Applying some patch files
-RUN patch -p2 -d / < /home/jovyan/nbgrader-username.patch && \
-        patch -p2 -d / < /home/jovyan/nbgrader-stderr-fail.patch && \
-        patch -p2 -d / < /home/jovyan/nbgrader-feedback-hide_input.patch && \
-        patch -p2 -d / < /home/jovyan/nbgrader-validate_report-hide_input.patch && \
-        patch -p2 -d / < /home/jovyan/jupyter-contrib-nbextensions.patch && \
-        patch -p2 -d / < /home/jovyan/nbgrader-assignment-path-includes-course.patch && \
-        patch -p2 -d / < /home/jovyan/notebook-show-course-handler.patch && \
-        patch -p2 -d / < /home/jovyan/notebook-show-course.patch && \
-        patch -p2 -d / < /home/jovyan/nbgrader-submit-logging.patch && \
-        rm /home/jovyan/*.patch
+RUN patch -p2 -d /opt/conda/lib/python3.7/site-packages/nbgrader < /home/jovyan/nbgrader.patch
+RUN patch -p2 -d /opt/conda/lib/python3.7/site-packages/notebook < /home/jovyan/notebook.patch
+RUN patch -p3 -d /home/jovyan/.local/share/jupyter < /home/jovyan/jupyter_contrib_nbextension.patch
+RUN rm /home/jovyan/*.patch
 
 USER root
 

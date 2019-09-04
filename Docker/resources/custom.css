@@ -70,3 +70,7 @@ pre.failed_message {
 .dropdown-submenu > .dropdown-menu li[data-name="Edit%20Metadata"]{
 	display: none !important;
 }
+
+.nav-tabs > li > a[href^="#courses"] {
+    display: none !important;
+}

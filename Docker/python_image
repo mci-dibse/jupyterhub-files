@@ -14,16 +14,17 @@ RUN apt-get install libpython3.6 -y
 
 USER ${NB_USER}
 
-RUN pip install jupyterhub==0.9.1
+RUN pip install jupyterhub==1.0.0
 
 # Installing nbgrader, but disabling the access to particular stuff for the student
-RUN pip install nbgrader==0.5.4 && \
+RUN pip install nbgrader==0.6.0 && \
         jupyter nbextension install --sys-prefix --py nbgrader --overwrite && \
         jupyter nbextension enable --sys-prefix --py nbgrader && \
         jupyter serverextension enable --sys-prefix --py nbgrader && \
         jupyter nbextension disable --sys-prefix create_assignment/main && \
         jupyter nbextension disable --sys-prefix formgrader/main --section=tree && \
         jupyter serverextension disable --sys-prefix nbgrader.server_extensions.formgrader
+
 
 # Installing the hide_input nbextension, but disabling the access to particular stuff for the student.
 RUN pip install jupyter_contrib_nbextensions && \
@@ -41,29 +42,12 @@ RUN jupyter nbextension enable freeze/main
 RUN pip3 install zeep
 
 # Applying some patch files
-RUN patch -p2 -d / < /home/jovyan/nbgrader-username.patch && \
-        patch -p2 -d / < /home/jovyan/nbgrader-stderr-fail.patch && \
-        patch -p2 -d / < /home/jovyan/nbgrader-feedback-hide_input.patch && \
-        patch -p2 -d / < /home/jovyan/nbgrader-validate_report-hide_input.patch && \
-        patch -p2 -d / < /home/jovyan/jupyter-contrib-nbextensions.patch && \
-        patch -p2 -d / < /home/jovyan/nbgrader-assignment-path-includes-course.patch && \
-        patch -p2 -d / < /home/jovyan/notebook-show-course-handler.patch && \
-        patch -p2 -d / < /home/jovyan/notebook-show-course.patch && \
-        patch -p2 -d / < /home/jovyan/nbgrader-submit-logging.patch && \
-        rm /home/jovyan/*.patch
-        
-# Installing the Java kernel
-RUN conda config --add channels conda-forge && \
-        conda create --name java scijava-jupyter-kernel
+RUN patch -p2 -d /opt/conda/lib/python3.7/site-packages/nbgrader < /home/jovyan/nbgrader.patch
+RUN patch -p2 -d /opt/conda/lib/python3.7/site-packages/notebook < /home/jovyan/notebook.patch
+RUN patch -p3 -d /home/jovyan/.local/share/jupyter < /home/jovyan/jupyter_contrib_nbextension.patch
+RUN rm /home/jovyan/*.patch
 
 USER root
-
-# Installing jq, which allows us to modify json files from the command line
-RUN apt-get install -y jq
-
-# Modifying the Java kernel json file with jq, so that the display name looks nice.
-RUN sudo jq '.display_name = "Java"' /home/jovyan/.local/share/jupyter/kernels/scijava/kernel.json > tmp.$$.json && \
-        sudo mv tmp.$$.json /home/jovyan/.local/share/jupyter/kernels/scijava/kernel.json
 
 # Giving each container a CSS file, which contains some customizations
 COPY resources/custom.css /home/jovyan/.jupyter/custom/custom.css
@@ -71,7 +55,7 @@ COPY resources/custom.css /home/jovyan/.jupyter/custom/custom.css
 # Giving each container a nbgrader_config file, which allows more flexible configuration (also includes setting for exchange timezone
 COPY resources/nbgrader_config.py /home/jovyan/.jupyter/nbgrader_config.py
 
-#Setting the time zone inside the container
+#Setting the timezone inside the container
 RUN apt-get install -y tzdata && \
          sudo echo "Europe/Vienna" > /etc/timezone && \
          ln -sf /usr/share/zoneinfo/Europe/Vienna /etc/localtime && \
