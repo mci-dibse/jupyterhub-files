@@ -28,7 +28,7 @@ except Exception as e:
     print(e)
 
 try:
-    session_id = login_proxy.service.login(id='dae', pw='*******')
+    session_id = login_proxy.service.login(id='dd1337', pw='jDsG6Cy4wwWcZ4yZ9ZAA4uh')
     service_proxy = Client(assignment_url)
     body = service_proxy.service.getAssignmentsForContext(session_id, course_id)
     root = ET.fromstring(body)
