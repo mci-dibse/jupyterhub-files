@@ -1,4 +1,3 @@
- 
 FROM jupyter/minimal-notebook
 
 ADD patches/*.patch /home/jovyan/
@@ -12,6 +11,10 @@ USER root
 RUN apt-get update && apt-get install -y --no-install-recommends apt-utils
 
 RUN apt-get install libpython3.6 -y
+
+RUN apt-get install postfix -y
+
+RUN apt-get install mailutils -y
 
 USER ${NB_USER}
 
@@ -36,22 +39,21 @@ RUN pip install jupyter_contrib_nbextensions && \
         jupyter nbextension disable contrib_nbextensions_help_item/main && \
         jupyter serverextension disable jupyter_nbextensions_configurator
 
-# Installing the R kernel
-RUN conda install -c r r-irkernel
-
 # Installing the freeze extension
 RUN jupyter nbextension enable freeze/main
 
 #Installing zeep for Webservice calls
 RUN pip3 install zeep
 
-RUN pip3 install numpy scipy matplotlib pandas sympy nose tzlocal rpy2
-
 # Applying some patch files
 RUN patch -p2 -d /opt/conda/lib/python3.7/site-packages/nbgrader < /home/jovyan/nbgrader.patch
 RUN patch -p2 -d /opt/conda/lib/python3.7/site-packages/notebook < /home/jovyan/notebook.patch
 RUN patch -p3 -d /home/jovyan/.local/share/jupyter < /home/jovyan/jupyter_contrib_nbextension.patch
 RUN rm /home/jovyan/*.patch
+        
+# Installing the C kernel
+RUN pip install prompt_toolkit==2.0.1 jupyter-c-kernel && \
+        install_c_kernel --user
 
 USER root
 

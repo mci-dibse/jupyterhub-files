@@ -1,0 +1,63 @@
+FROM jupyter/minimal-notebook
+
+ADD patches/instructor/*.patch /home/jovyan/
+
+# Giving each instructor container a script file for fetching courses from sakai
+COPY resources/instructor/sakai_assignments_synchronizer.py /home/jovyan/
+
+COPY resources/start-notebook.sh /usr/local/bin/
+
+RUN pip install --upgrade pip
+
+USER root
+
+RUN apt-get update && apt-get install -y --no-install-recommends apt-utils
+
+RUN apt-get install libpython3.6 -y
+
+RUN apt-get install postfix -y
+
+RUN apt-get install mailutils -y
+
+USER ${NB_USER}
+
+RUN pip install jupyterhub==1.0.0
+
+RUN pip install ipywidgets
+
+# Installing nbgrader, but disabling the access to particular stuff for the student
+RUN pip install nbgrader==0.6.0 && \
+        jupyter nbextension install --sys-prefix --py nbgrader --overwrite && \
+        jupyter nbextension enable --sys-prefix --py nbgrader && \
+        jupyter serverextension enable --sys-prefix --py nbgrader
+
+# Installing the freeze and hide_input nbextension
+RUN pip install jupyter_contrib_nbextensions && \
+        jupyter contrib nbextension install --user && \
+        jupyter nbextension install --user --py widgetsnbextension && \
+        jupyter nbextension enable --user --py widgetsnbextension && \
+        jupyter nbextension enable hide_input/main && \
+        jupyter nbextension enable freeze/main
+
+#Installing zeep for Webservice calls
+RUN pip3 install zeep
+
+# Applying some patch files
+RUN patch -p2 -d /opt/conda/lib/python3.7/site-packages/nbgrader < /home/jovyan/nbgrader.patch
+RUN patch -p2 -d /opt/conda/lib/python3.7/site-packages/notebook < /home/jovyan/notebook.patch
+RUN rm /home/jovyan/*.patch
+        
+# Installing the C kernel
+RUN pip install prompt_toolkit==2.0.1 jupyter-c-kernel && \
+        install_c_kernel --user
+        
+USER root
+
+# Giving each container a CSS file, which contains some customizations
+COPY resources/instructor/custom.css /home/jovyan/.jupyter/custom/custom.css
+
+#Setting the timezone inside the container
+RUN apt-get install -y tzdata && \
+         sudo echo "Europe/Vienna" > /etc/timezone && \
+         ln -sf /usr/share/zoneinfo/Europe/Vienna /etc/localtime && \
+         dpkg-reconfigure -f noninteractive tzdata

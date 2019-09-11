@@ -1,7 +1,16 @@
 diff --git a/nbgrader/exchange/exchange.py b/nbgrader/exchange/exchange.py
-index 1156c11e..bc10cf85 100644
+index 1156c11e..f68c1c6e 100644
 --- a/nbgrader/exchange/exchange.py
 +++ b/nbgrader/exchange/exchange.py
+@@ -23,7 +23,7 @@ class ExchangeError(Exception):
+ class Exchange(LoggingConfigurable):
+ 
+     assignment_dir = Unicode(
+-        ".",
++        "/home/jovyan/work",
+         help=dedent(
+             """
+             Local path for storing student assignments.  Defaults to '.'
 @@ -57,7 +57,7 @@ class Exchange(LoggingConfigurable):
          return os.path.join(jupyter_data_dir(), 'nbgrader_cache')
  
@@ -12,7 +21,7 @@ index 1156c11e..bc10cf85 100644
              """
              Whether the path for fetching/submitting  assignments should be
 diff --git a/nbgrader/exchange/submit.py b/nbgrader/exchange/submit.py
-index 26593cd9..2d6d6cb5 100644
+index 26593cd9..8aa3c46d 100644
 --- a/nbgrader/exchange/submit.py
 +++ b/nbgrader/exchange/submit.py
 @@ -1,5 +1,11 @@
@@ -72,7 +81,7 @@ index 26593cd9..2d6d6cb5 100644
          # Make this 0777=ugo=rwx so the instructor can delete later. Hidden from other users by the timestamp.
          os.chmod(
              dest_path,
-@@ -161,6 +186,50 @@ class ExchangeSubmit(Exchange):
+@@ -161,6 +186,49 @@ class ExchangeSubmit(Exchange):
          with open(os.path.join(cache_path, "timestamp.txt"), "w") as fh:
              fh.write(self.timestamp)
  
@@ -82,9 +91,8 @@ index 26593cd9..2d6d6cb5 100644
 +        logger.info("Submitted as: %s %s %s", self.coursedir.course_id, self.coursedir.assignment_id, str(self.timestamp))
 +
 +    def create_sakai_submission(self, dest_path):
-+        base_url='https://sakai-dev.mci.edu'
++        base_url='https://sakai.mci4me.at'
 +        login_url = base_url + "/sakai-ws/soap/login?wsdl"
-+        script_url = base_url + "/sakai-ws/soap/sakai?wsdl"
 +        soap_url='/sakai-ws/soap'
 +        assignment_url = base_url + soap_url + "/assignments?wsdl"
 +        logger = self.getLogger()
@@ -145,6 +153,19 @@ index b35cbb39..d0794a8d 100644
                  }
                  body.addClass("validation-failed");
                  this.validate_failure(button);
+diff --git a/nbgrader/nbextensions/course_list/main.js b/nbgrader/nbextensions/course_list/main.js
+index 5e8af4d4..fe624ce0 100644
+--- a/nbgrader/nbextensions/course_list/main.js
++++ b/nbgrader/nbextensions/course_list/main.js
+@@ -13,7 +13,7 @@ define([
+     // xsrf token in the header data
+ 
+     var course_html = $([
+-        '<div id="courses" class="tab-pane">',
++        '<div id="courses" class="courses-tab-link">',
+         '  <div class="alert alert-danger version_error">',
+         '  </div>',
+         '  <div class="panel-group">',
 diff --git a/nbgrader/nbextensions/validate_assignment/main.js b/nbgrader/nbextensions/validate_assignment/main.js
 index 86b8ca2b..99cb170e 100644
 --- a/nbgrader/nbextensions/validate_assignment/main.js
@@ -263,19 +284,21 @@ index f28c54e5..aa768f01 100644
 -
  {% endblock input %}
 diff --git a/nbgrader/utils.py b/nbgrader/utils.py
-index 4aff2ac9..4959345b 100644
+index 4aff2ac9..10160c93 100644
 --- a/nbgrader/utils.py
 +++ b/nbgrader/utils.py
-@@ -111,8 +111,18 @@ def determine_grade(cell, log=None):
+@@ -111,8 +111,21 @@ def determine_grade(cell, log=None):
          # 3. output is something else, or nothing (full credit).
          for output in cell.outputs:
              # option 1: error, return 0
--            if output.output_type == 'error':
++            errorFlag = False
+             if output.output_type == 'error':
 -                return 0, max_points
-+            if output.output_type == 'error':    
 +                errorFlag = True
 +            # Error messages written to stderr are also a sign of a failed test
 +            elif output.output_type == 'stream' and output.name == 'stderr':
++                errorFlag = True
++            elif output.output_type == 'stream' and output.name == 'stdout' and output.text[:6] == 'Error:':
 +                errorFlag = True
 +            if errorFlag:
 +               # There may also be tests with zero max points (e.g. to check for correct syntax)
@@ -287,7 +310,7 @@ index 4aff2ac9..4959345b 100644
              # if not error, then check for option 2, partial credit
              if output.output_type == 'execute_result':
                  # is there a single result that can be cast to a float?
-@@ -218,6 +228,10 @@ def check_directory(path, read=False, write=False, execute=False):
+@@ -218,6 +231,10 @@ def check_directory(path, read=False, write=False, execute=False):
  
  def get_osusername():
      """Get the username of the current process."""

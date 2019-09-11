@@ -1,0 +1,111 @@
+ 
+FROM jupyter/minimal-notebook
+
+ADD patches/*.patch /home/jovyan/
+
+COPY resources/start-notebook.sh /usr/local/bin/
+
+RUN pip install --upgrade pip
+
+USER root
+
+RUN apt-get update && apt-get install -y --no-install-recommends apt-utils
+
+RUN apt-get install libpython3.6 -y
+
+USER ${NB_USER}
+
+RUN conda update conda
+
+RUN pip install jupyterhub==1.0.0
+
+# Installing nbgrader, but disabling the access to particular stuff for the student
+RUN pip install nbgrader==0.6.0 && \
+        jupyter nbextension install --sys-prefix --py nbgrader --overwrite && \
+        jupyter nbextension enable --sys-prefix --py nbgrader && \
+        jupyter serverextension enable --sys-prefix --py nbgrader
+
+# Installing the C++ kernel, uninstalling C++11 and C++14, which only leaves C++17
+RUN conda update -n base conda
+RUN conda create -n cling
+RUN . activate cling
+RUN conda install xeus-cling notebook -c QuantStack -c conda-forge
+RUN . deactivate
+
+# Installing the cppmagic extension, which allows usage of C++ in the Python kernel.
+RUN pip install git+git://github.com/xapharius/cppmagic.git
+
+# Installing the R kernel
+RUN conda install -c r r-irkernel
+
+# Installing the C kernel
+RUN pip install prompt_toolkit==2.0.1 jupyter-c-kernel
+RUN install_c_kernel --user
+
+# Installing the Script of Scripts kernel
+RUN pip install sos sos-notebook && \
+        python -m sos_notebook.install
+
+# Installing the Java kernel
+RUN conda config --add channels conda-forge && \
+        conda create --name java scijava-jupyter-kernel
+
+# Installing the hide_input nbextension, but disabling the access to particular stuff for the student.
+RUN pip install jupyter_contrib_nbextensions && \
+        jupyter contrib nbextension install --user && \
+        jupyter nbextension enable hide_input/main
+
+# Installing the freeze extension
+RUN jupyter nbextension enable freeze/main
+
+#Installing zeep for Webservice calls
+RUN pip3 install zeep
+
+# Applying some patch files
+RUN patch -p2 -d /opt/conda/lib/python3.7/site-packages/nbgrader < /home/jovyan/nbgrader.patch
+RUN patch -p2 -d /opt/conda/lib/python3.7/site-packages/notebook < /home/jovyan/notebook.patch
+RUN rm /home/jovyan/*.patch
+
+#RUN conda install -c damianavila82 rise
+
+USER root
+
+# Installing jq, which allows us to modify json files from the command line
+RUN sudo apt-get install -y jq
+
+# Modifying the Java kernel json file with jq, so that the display name looks nice.
+RUN sudo jq '.display_name = "Java"' /home/jovyan/.local/share/jupyter/kernels/scijava/kernel.json > tmp.$$.json && \
+        sudo mv tmp.$$.json /home/jovyan/.local/share/jupyter/kernels/scijava/kernel.json
+
+# Modifying the C++ kernel json file with jq, so that the display name looks nice.
+#RUN sudo jq '.display_name = "C++"' /opt/conda/share/jupyter/kernels/xeus-cling-cpp17/kernel.json > tmp.$$.json && \
+#       sudo mv tmp.$$.json /opt/conda/share/jupyter/kernels/xeus-cling-cpp17/kernel.json
+
+# Setting up a directory for the exchange of data between the students and the instructor
+RUN mkdir -p --mode=0777 /srv/nbgrader/exchange
+
+RUN mkdir -p --mode=0777 /srv/nbgrader/test_exchange
+
+# Setting up a directory for feedback in every user's home folder
+RUN mkdir -p /home/jovyan/work/_feedback/programmiertechnik
+
+# Giving each container a CSS file, which contains some customizations
+COPY ./resources/custom.css /home/jovyan/.jupyter/custom/custom.css
+
+# Giving each instructor container a script file for fetching courses from sakai
+COPY resources/instructor/sakai_assignments_synchronizer.py /home/jovyan/
+
+COPY ./resources/.bash_aliases /home/jovyan
+
+#Make the nbgrader_config editable for jovyan (hidden with same approach as exchange/inbound)
+#RUN chown 999:999 /home/jovyan/.jupyter
+#RUN chmod 733 /home/jovyan/.jupyter
+#RUN chmod 666 /home/jovyan/.jupyter/nbgrader_config.py
+
+#Setting the time zone inside the container
+RUN apt-get install -y tzdata && \
+         sudo echo "Europe/Vienna" > /etc/timezone && \
+         ln -sf /usr/share/zoneinfo/Europe/Vienna /etc/localtime && \
+         dpkg-reconfigure -f noninteractive tzdata
+         
+USER ${NB_USER}

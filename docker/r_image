@@ -36,8 +36,8 @@ RUN pip install jupyter_contrib_nbextensions && \
         jupyter nbextension disable contrib_nbextensions_help_item/main && \
         jupyter serverextension disable jupyter_nbextensions_configurator
 
-# Installing the R kernel
-#RUN conda install -c r r-irkernel
+# Installing the R testthat package
+RUN conda install r-testthat
 
 # Installing the freeze extension
 RUN jupyter nbextension enable freeze/main

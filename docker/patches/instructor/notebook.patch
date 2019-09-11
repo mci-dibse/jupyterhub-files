@@ -1,0 +1,36 @@
+diff --git a/notebook/base/handlers.py b/notebook/base/handlers.py
+index cd801c9a1..454931518 100755
+--- a/notebook/base/handlers.py
++++ b/notebook/base/handlers.py
+@@ -520,7 +520,12 @@ class IPythonHandler(AuthenticatedHandler):
+     
+     @property
+     def template_namespace(self):
++        coursestring = os.getenv('COURSE', '')
++        if coursestring:
++            coursestring = 'Kurs: ' + coursestring;
++            coursestring = coursestring[:coursestring.rindex(' ')+1]
+         return dict(
++            course=coursestring,
+             base_url=self.base_url,
+             default_url=self.default_url,
+             ws_url=self.ws_url,
+diff --git a/notebook/templates/page.html b/notebook/templates/page.html
+index 9e68da1b2..ad0687ad3 100644
+--- a/notebook/templates/page.html
++++ b/notebook/templates/page.html
+@@ -136,13 +136,7 @@ dir="ltr">
+   
+   {% block login_widget %}
+ 
+-    <span id="login_widget">
+-      {% if logged_in %}
+-        <button id="logout" class="btn btn-sm navbar-btn">{% trans %}Logout{% endtrans %}</button>
+-      {% elif login_available and not logged_in %}
+-        <button id="login" class="btn btn-sm navbar-btn">{% trans %}Login{% endtrans %}</button>
+-      {% endif %}
+-    </span>
++    <span id="course_widget">{{course}}</span>
+ 
+   {% endblock %}
+ 

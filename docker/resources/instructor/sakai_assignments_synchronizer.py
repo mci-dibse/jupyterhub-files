@@ -7,18 +7,15 @@ from zeep import Client
 import base64
 import xml.etree.ElementTree as ET
 
-if len(sys.argv) != 3:
-    print("Usage: ", sys.argv[0] + " sakai_course_id nbgrader_course_name")
+if len(sys.argv) != 2:
+    print("Usage: ", sys.argv[0] + " sakai_course_id")
     exit(1)
 
 course_id = sys.argv[1]
-course = sys.argv[2]
-parent_dir = "/home/jupyter/instructor-workspaces"
-course_dir = os.path.join(parent_dir, course)
+course_dir = "."
 source_dir = os.path.join(course_dir, "source")
-base_url='https://sakai-dev.mci.edu'
+base_url='https://sakai.mci4me.at'
 login_url = base_url + "/sakai-ws/soap/login?wsdl"
-script_url = base_url + "/sakai-ws/soap/sakai?wsdl"
 soap_url='/sakai-ws/soap'
 assignment_url = base_url + soap_url + "/assignments?wsdl"
 #https://sakai.mci4me.at/sakai-ws/soap/login?wsdl
@@ -47,4 +44,3 @@ try:
 except Exception as e:
     print(e)
     login_proxy.service.logout(session_id)
-

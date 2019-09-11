@@ -29,12 +29,11 @@ RUN pip install nbgrader==0.6.0 && \
         jupyter serverextension disable --sys-prefix nbgrader.server_extensions.formgrader
 
 # Installing the C++ kernel, uninstalling C++11 and C++14, which only leaves C++17
-#RUN conda create -n cling && \
-#       . activate cling && \
-#       conda install xeus-cling notebook -c QuantStack -c conda-forge && \
-#       . deactivate
-#       jupyter kernelspec uninstall xeus-cling-cpp11 && \
-#       jupyter kernelspec uninstall xeus-cling-cpp14
+RUN conda update -n base conda
+RUN conda create -n cling
+RUN . activate cling
+RUN conda install xeus-cling notebook -c QuantStack -c conda-forge
+RUN . deactivate
 
 # Installing the cppmagic extension, which allows usage of C++ in the Python kernel.
 RUN pip install git+git://github.com/xapharius/cppmagic.git

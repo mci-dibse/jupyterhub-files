@@ -53,8 +53,6 @@ RUN conda create -n cling
 RUN . activate cling
 RUN conda install xeus-cling notebook -c QuantStack -c conda-forge
 RUN . deactivate
-#        jupyter kernelspec uninstall xeus-cling-cpp11
-#        jupyter kernelspec uninstall xeus-cling-cpp14
 
 USER root
 
