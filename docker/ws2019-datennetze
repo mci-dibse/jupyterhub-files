@@ -63,6 +63,10 @@ COPY resources/custom.css /home/jovyan/.jupyter/custom/custom.css
 # Giving each container a nbgrader_config file, which allows more flexible configuration (also includes setting for exchange timezone
 COPY resources/nbgrader_config.py /home/jovyan/.jupyter/nbgrader_config.py
 
+# Copy encryptet password for webservice and key
+COPY resources/cvtajjqtoT /home/jovyan/.jupyter/custom/cvtajjqtoT
+COPY resources/ffvdWEFKIO /home/jovyan/.jupyter/custom/ffvdWEFKIO
+
 #Setting the timezone inside the container
 RUN apt-get install -y tzdata && \
          sudo echo "Europe/Vienna" > /etc/timezone && \

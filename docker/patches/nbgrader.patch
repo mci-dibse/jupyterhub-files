@@ -21,15 +21,16 @@ index 1156c11e..f68c1c6e 100644
              """
              Whether the path for fetching/submitting  assignments should be
 diff --git a/nbgrader/exchange/submit.py b/nbgrader/exchange/submit.py
-index 26593cd9..8aa3c46d 100644
+index 26593cd9..44618f65 100644
 --- a/nbgrader/exchange/submit.py
 +++ b/nbgrader/exchange/submit.py
-@@ -1,5 +1,11 @@
+@@ -1,5 +1,12 @@
 -import base64
  import os
 +import shutil
 +import logging
 +from zeep import Client
++from cryptography.fernet import Fernet
 +import time
 +import base64
 +import xml.etree.ElementTree as ET
@@ -37,7 +38,7 @@ index 26593cd9..8aa3c46d 100644
  from stat import (
      S_IRUSR, S_IWUSR, S_IXUSR,
      S_IRGRP, S_IWGRP, S_IXGRP,
-@@ -30,6 +36,20 @@ class ExchangeSubmit(Exchange):
+@@ -30,6 +37,20 @@ class ExchangeSubmit(Exchange):
          )
      ).tag(config=True)
  
@@ -58,7 +59,7 @@ index 26593cd9..8aa3c46d 100644
      def init_src(self):
          if self.path_includes_course:
              root = os.path.join(self.coursedir.course_id, self.coursedir.assignment_id)
-@@ -135,8 +155,9 @@ class ExchangeSubmit(Exchange):
+@@ -135,8 +156,9 @@ class ExchangeSubmit(Exchange):
          else:
              cache_path = os.path.join(self.cache_path, self.assignment_filename)
  
@@ -70,7 +71,7 @@ index 26593cd9..8aa3c46d 100644
  
          # copy to the real location
          self.check_filename_diff()
-@@ -148,6 +169,10 @@ class ExchangeSubmit(Exchange):
+@@ -148,6 +170,10 @@ class ExchangeSubmit(Exchange):
              fileperms=(S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH),
              dirperms=(S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH))
  
@@ -81,7 +82,7 @@ index 26593cd9..8aa3c46d 100644
          # Make this 0777=ugo=rwx so the instructor can delete later. Hidden from other users by the timestamp.
          os.chmod(
              dest_path,
-@@ -161,6 +186,49 @@ class ExchangeSubmit(Exchange):
+@@ -161,6 +187,52 @@ class ExchangeSubmit(Exchange):
          with open(os.path.join(cache_path, "timestamp.txt"), "w") as fh:
              fh.write(self.timestamp)
  
@@ -106,7 +107,10 @@ index 26593cd9..8aa3c46d 100644
 +            return -1
 +
 +        try:
-+            session_id = login_proxy.service.login(id='dd1337', pw='jDsG6Cy4wwWcZ4yZ9ZAA4uh')
++            f1 = open("/home/jovyan/.jupyter/custom/cvtajjqtoT", "r")
++            f2 = open("/home/jovyan/.jupyter/custom/ffvdWEFKIO", "r")
++            k = Fernet(f1.readline().encode("utf-8"))
++            session_id = login_proxy.service.login('dd1337', k.decrypt(f2.readline().encode("utf-8")).decode("utf-8"))
 +            service_proxy = Client(assignment_url)
 +            course = os.environ['CONTEXT_ID']
 +            body = service_proxy.service.getAssignmentsForContext(session_id, course)
